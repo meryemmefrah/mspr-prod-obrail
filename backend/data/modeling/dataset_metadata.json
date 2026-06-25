@@ -1,0 +1,66 @@
+{
+  "dataset_path": "C:\\Users\\DELL PRO\\Desktop\\IA\\mspr-ia-obrail\\data\\modeling\\route_substitution_dataset.csv",
+  "rows_before_drop": 4106,
+  "rows_after_drop": 4101,
+  "removed_rows": 5,
+  "columns": [
+    "route_id",
+    "departure_station_id",
+    "arrival_station_id",
+    "departure_station_name",
+    "arrival_station_name",
+    "departure_city_name",
+    "arrival_city_name",
+    "departure_country_name",
+    "arrival_country_name",
+    "departure_country_code",
+    "arrival_country_code",
+    "operator_name",
+    "is_international",
+    "distance_km",
+    "trip_count",
+    "weekly_frequency",
+    "daily_frequency_avg",
+    "avg_duration_minutes",
+    "min_duration_minutes",
+    "max_duration_minutes",
+    "main_train_type",
+    "has_night_train",
+    "has_day_train",
+    "avg_num_stops",
+    "min_num_stops",
+    "max_num_stops",
+    "avg_quality_score",
+    "min_quality_score",
+    "quality_issues_count",
+    "co2_train_kg",
+    "co2_plane_kg",
+    "co2_saving_kg",
+    "co2_saving_percent",
+    "substitution_score",
+    "substitution_potential"
+  ],
+  "target_column": "substitution_potential",
+  "target_distribution": {
+    "moyen": 2919,
+    "faible": 733,
+    "fort": 449
+  },
+  "rules_summary": {
+    "fort": [
+      "250 <= distance_km <= 900, duration <= 300, weekly_frequency >= 10, quality >= 70",
+      "ou 700 <= distance_km <= 1500 avec train de nuit, weekly_frequency >= 3, quality >= 70"
+    ],
+    "moyen": [
+      "250 <= distance_km <= 1200, duration <= 480, weekly_frequency >= 3, quality >= 50"
+    ],
+    "faible": [
+      "données critiques manquantes, qualité < 50, fréquence faible, durée trop longue ou distance peu adaptée"
+    ]
+  },
+  "co2_assumptions": {
+    "train_kg_per_km": 0.014,
+    "plane_kg_per_km": 0.23,
+    "note": "Constantes provisoires utilisées pour la V1. À documenter ou remplacer par des facteurs officiels."
+  }
+}

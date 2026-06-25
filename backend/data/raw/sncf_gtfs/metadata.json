@@ -1,0 +1,19 @@
+{
+  "source_name": "Réseau SNCF TGV, Intercités et TER",
+  "source_url": "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip",
+  "source_format": "GTFS ZIP",
+  "source_description": "Horaires théoriques SNCF TGV, Intercités et TER au format GTFS",
+  "extraction_date": "2026-06-22T20:04:18",
+  "files_extracted": [
+    "trips.txt",
+    "feed_info.txt",
+    "stop_times.txt",
+    "routes.txt",
+    "stops.txt",
+    "calendar_dates.txt",
+    "transfers.txt",
+    "agency.txt"
+  ],
+  "raw_folder": "data\\raw\\sncf_gtfs",
+  "import_status": "success"
+}

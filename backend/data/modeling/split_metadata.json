@@ -1,0 +1,33 @@
+{
+  "input_dataset": "C:\\Users\\DELL PRO\\Desktop\\IA\\mspr-ia-obrail\\data\\modeling\\route_substitution_dataset.csv",
+  "target_column": "substitution_potential",
+  "random_state": 42,
+  "split_strategy": "stratified train/validation/test split",
+  "train": {
+    "path": "C:\\Users\\DELL PRO\\Desktop\\IA\\mspr-ia-obrail\\data\\modeling\\train.csv",
+    "rows": 2870,
+    "distribution": {
+      "moyen": 2043,
+      "faible": 513,
+      "fort": 314
+    }
+  },
+  "validation": {
+    "path": "C:\\Users\\DELL PRO\\Desktop\\IA\\mspr-ia-obrail\\data\\modeling\\validation.csv",
+    "rows": 615,
+    "distribution": {
+      "moyen": 438,
+      "faible": 110,
+      "fort": 67
+    }
+  },
+  "test": {
+    "path": "C:\\Users\\DELL PRO\\Desktop\\IA\\mspr-ia-obrail\\data\\modeling\\test.csv",
+    "rows": 616,
+    "distribution": {
+      "moyen": 438,
+      "faible": 110,
+      "fort": 68
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "prediction": "fort",
+  "input": {
+    "is_international": 1,
+    "distance_km": 850.0,
+    "weekly_frequency": 7.0,
+    "daily_frequency_avg": 1.0,
+    "avg_duration_minutes": 480.0,
+    "min_duration_minutes": 450.0,
+    "max_duration_minutes": 520.0,
+    "has_night_train": 1,
+    "has_day_train": 0,
+    "avg_num_stops": 6.0,
+    "avg_quality_score": 85.0,
+    "quality_issues_count": 0,
+    "co2_train_kg": 11.9,
+    "co2_plane_kg": 195.5,
+    "co2_saving_kg": 183.6,
+    "co2_saving_percent": 93.9
+  },
+  "probabilities": {
+    "faible": 0.0,
+    "fort": 1.0,
+    "moyen": 0.0
+  },
+  "confidence": 1.0
+}

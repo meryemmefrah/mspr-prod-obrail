@@ -1,0 +1,18 @@
+{
+  "is_international": 1,
+  "distance_km": 650,
+  "weekly_frequency": 14,
+  "daily_frequency_avg": 2,
+  "avg_duration_minutes": 260,
+  "min_duration_minutes": 240,
+  "max_duration_minutes": 300,
+  "has_night_train": 0,
+  "has_day_train": 1,
+  "avg_num_stops": 3,
+  "avg_quality_score": 90,
+  "quality_issues_count": 0,
+  "co2_train_kg": 9.1,
+  "co2_plane_kg": 149.5,
+  "co2_saving_kg": 140.4,
+  "co2_saving_percent": 93.9
+}
