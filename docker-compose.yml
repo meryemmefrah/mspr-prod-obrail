@@ -1,0 +1,93 @@
+# ============================================================
+# Docker Compose - ObRail Europe (mise en production)
+# ============================================================
+# Orchestre l'ensemble de la solution applicative :
+#   - postgres : base de données relationnelle
+#   - api      : backend FastAPI (initialise la base au démarrage)
+#   - frontend : interface React servie par Nginx
+#
+# Les services de monitoring (Prometheus, Grafana) seront ajoutés
+# à l'étape suivante.
+#
+# Démarrage complet en une seule commande :
+#   docker compose up -d
+#
+# Les identifiants sont lus depuis le fichier .env (jamais en dur).
+# ============================================================
+
+services:
+  # ------------------------------------------------------------
+  # Base de données PostgreSQL
+  # ------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: obrail_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # Persistance : les données survivent au redémarrage des conteneurs.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # L'API attend que ce healthcheck passe avant de démarrer réellement.
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------------------------
+  # Backend API (FastAPI)
+  # ------------------------------------------------------------
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: obrail_api
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS}
+      LOG_LEVEL: ${LOG_LEVEL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Vérifie que l'API répond et que la base est joignable.
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  # ------------------------------------------------------------
+  # Frontend (React servi par Nginx)
+  # ------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # URL de l'API consommée par le navigateur (côté client).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    container_name: obrail_frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+# ------------------------------------------------------------
+# Volumes persistants
+# ------------------------------------------------------------
+volumes:
+  postgres_data:

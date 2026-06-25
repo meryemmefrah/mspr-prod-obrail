@@ -1,0 +1,21 @@
+# Caches et environnements
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Données brutes volumineuses : inutiles dans l'image de production.
+# Seules les données transformées (data/processed) sont nécessaires au chargement.
+data/raw/
+
+# Notebooks et rapports d'analyse (hors périmètre runtime)
+notebooks/
+reports/
+
+# Secrets : ne jamais copier le .env dans l'image
+.env
+
+# Documentation
+*.md

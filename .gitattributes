@@ -1,0 +1,14 @@
+# ============================================================
+# Normalisation des fins de ligne
+# ============================================================
+# Par défaut, Git gère automatiquement les fins de ligne.
+* text=auto
+
+# Les scripts shell DOIVENT garder des fins de ligne LF (Unix),
+# sinon ils échouent lorsqu'ils s'exécutent dans un conteneur Linux.
+*.sh text eol=lf
+
+# Idem pour les fichiers de config exécutés en environnement Linux.
+entrypoint.sh text eol=lf
+Dockerfile text eol=lf
+*.yml text eol=lf
