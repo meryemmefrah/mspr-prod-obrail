@@ -1,63 +1,49 @@
-# Manipulation et analyse des données
+# ============================================================
+# Dépendances Python - Backend ObRail Europe
+# ============================================================
+# Versions épinglées pour garantir la reproductibilité du build
+# (même comportement en local, en CI et en production).
+# ============================================================
 
-pandas
-numpy
+# --- Manipulation et analyse des données ---
+pandas==2.2.3
+numpy==2.1.3
 
-# Téléchargement des sources externes
+# --- Téléchargement des sources externes (ETL) ---
+requests==2.32.3
 
-requests
+# --- Scraping HTML (Wikipedia) ---
+beautifulsoup4==4.12.3
 
-# Scraping HTML, utilisé notamment pour Wikipedia
+# --- Connexion PostgreSQL ---
+psycopg2-binary==2.9.10
 
-beautifulsoup4
+# --- API REST ---
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
 
-# Connexion PostgreSQL depuis Python
+# --- Lecture du fichier .env ---
+python-dotenv==1.0.1
 
-psycopg2-binary
+# --- Enrichissement géographique (ETL) ---
+reverse_geocoder==1.5.1
 
-# API REST
+# --- Gestion des codes pays ISO ---
+pycountry==24.6.1
 
-fastapi
-uvicorn[standard]
-pydantic
+# --- Machine Learning ---
+scikit-learn==1.5.2
+joblib==1.4.2
 
-# Dashboard interactif
+# --- Rapports markdown (scripts) ---
+tabulate==0.9.0
 
-streamlit
+# --- Visualisations (scripts ML / notebooks) ---
+plotly==5.24.1
+networkx==3.4.2
+matplotlib==3.9.3
 
-# Visualisations
-
-plotly
-networkx
-matplotlib
-
-# Notebooks
-
-jupyter
-ipykernel
-
-# Lecture du fichier .env
-
-python-dotenv
-
-# Enrichissement géographique local à partir des coordonnées
-
-reverse_geocoder
-
-# Gestion des codes pays ISO
-
-pycountry
-
-# Machine Learning
-
-scikit-learn
-joblib
-
-# Rapports markdown
-
-tabulate
-
-# Tests
-
-pytest
-httpx
+# --- Tests ---
+pytest==8.3.4
+httpx==0.28.1

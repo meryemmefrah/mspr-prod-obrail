@@ -1,35 +1,31 @@
-import os
+"""
+Couche d'accès à la base de données PostgreSQL.
+
+Ce module centralise la connexion à PostgreSQL et l'exécution des requêtes.
+Le reste de l'API n'a ainsi pas besoin de connaître les détails techniques
+(host, port, mot de passe, sérialisation JSON...).
+"""
+
+import logging
 from decimal import Decimal
 from datetime import date, datetime, time
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from dotenv import load_dotenv
+
+from api.config import DB_CONFIG
 
 
-# Charge les variables du fichier .env afin d'éviter d'écrire les identifiants
-# de connexion directement dans le code.
-load_dotenv()
-
-
-# Regroupe tous les paramètres nécessaires pour se connecter à PostgreSQL.
-# Les valeurs par défaut permettent de lancer le projet en local avec Docker.
-DB_CONFIG = {
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": int(os.getenv("DB_PORT", 5432)),
-    "dbname": os.getenv("DB_NAME", "obrail"),
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "postgres"),
-}
+logger = logging.getLogger("obrail.database")
 
 
 def get_connection():
     """
     Crée une nouvelle connexion à la base PostgreSQL.
 
-    Cette fonction centralise la connexion afin que le reste de l'API n'ait pas
-    besoin de connaître les détails techniques comme le host, le port ou le mot
-    de passe. Chaque requête ouvre une connexion puis la referme proprement.
+    Chaque requête ouvre une connexion puis la referme proprement. Cette
+    approche simple convient au volume de ce projet ; pour une charge plus
+    élevée, on utiliserait un pool de connexions.
     """
     return psycopg2.connect(**DB_CONFIG)
 
@@ -38,9 +34,8 @@ def serialize_value(value):
     """
     Transforme une valeur PostgreSQL en valeur compatible avec une réponse JSON.
 
-    FastAPI sait retourner du JSON, mais certains types venant de PostgreSQL,
-    comme Decimal, date, datetime ou time, doivent être convertis avant d'être
-    envoyés au navigateur ou à Postman.
+    Certains types renvoyés par PostgreSQL (Decimal, date, datetime, time)
+    ne sont pas directement sérialisables en JSON et doivent être convertis.
     """
     if isinstance(value, Decimal):
         return float(value)
@@ -52,12 +47,7 @@ def serialize_value(value):
 
 
 def serialize_row(row: dict) -> dict:
-    """
-    Convertit une ligne SQL complète en dictionnaire compatible JSON.
-
-    La base renvoie une ligne sous forme de dictionnaire. Cette fonction parcourt
-    chaque colonne et applique la conversion adaptée à sa valeur.
-    """
+    """Convertit une ligne SQL complète en dictionnaire compatible JSON."""
     return {key: serialize_value(value) for key, value in row.items()}
 
 
@@ -65,12 +55,13 @@ def execute_query(query: str, params: tuple | list | None = None, fetch_one: boo
     """
     Exécute une requête SQL et retourne le résultat sous forme de dictionnaire.
 
-    - query contient la requête SQL à exécuter.
-    - params contient les valeurs utilisées dans les filtres SQL.
-    - fetch_one permet de récupérer une seule ligne au lieu d'une liste.
+    - query : la requête SQL à exécuter.
+    - params : les valeurs utilisées dans les filtres SQL (requêtes paramétrées,
+      ce qui protège contre les injections SQL).
+    - fetch_one : récupère une seule ligne au lieu d'une liste.
 
-    La fonction utilise RealDictCursor pour obtenir directement des résultats
-    lisibles, avec le nom des colonnes comme clés.
+    RealDictCursor permet d'obtenir des résultats lisibles, avec le nom des
+    colonnes comme clés.
     """
     connection = get_connection()
 
@@ -87,3 +78,26 @@ def execute_query(query: str, params: tuple | list | None = None, fetch_one: boo
 
     finally:
         connection.close()
+
+
+def check_database() -> bool:
+    """
+    Vérifie que la base de données est joignable et répond.
+
+    Contrairement à execute_query, cette fonction ne lève jamais d'exception :
+    elle renvoie True si la base répond, False sinon. Elle est utilisée par
+    l'endpoint /health pour déterminer l'état de santé du service sans faire
+    planter l'API si la base est momentanément indisponible.
+    """
+    try:
+        connection = get_connection()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1;")
+                cursor.fetchone()
+            return True
+        finally:
+            connection.close()
+    except Exception as exc:
+        logger.warning("Base de donnees injoignable : %s", exc)
+        return False

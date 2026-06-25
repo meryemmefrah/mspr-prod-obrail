@@ -1,15 +1,93 @@
-from fastapi import FastAPI, Query, HTTPException
+import logging
+import time
+
+from fastapi import FastAPI, Query, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from api.config import (
+    API_TITLE,
+    API_VERSION,
+    API_DESCRIPTION,
+    CORS_ORIGINS,
+    LOG_LEVEL,
+)
+from api.database import execute_query, check_database
 from api.prediction import router as prediction_router
-from api.database import execute_query
 
 
-# Création de l'application FastAPI.
+# ------------------------------------------------------------
+# Journalisation (logging)
+# ------------------------------------------------------------
+# Une configuration de logs claire permet le diagnostic rapide d'incidents,
+# ce qui est une exigence de supervision du cahier des charges.
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+)
+logger = logging.getLogger("obrail.api")
+
+
+# ------------------------------------------------------------
+# Création de l'application FastAPI
+# ------------------------------------------------------------
 # Les informations ci-dessous apparaissent dans la documentation interactive /docs.
 app = FastAPI(
-    title="ObRail Europe API",
-    description="API REST ObRail permettant de consulter les données ferroviaires transformées dans PostgreSQL et d’exposer le modèle IA de substitution avion-train.",
-    version="1.0.0",
+    title=API_TITLE,
+    description=API_DESCRIPTION,
+    version=API_VERSION,
 )
+
+
+# ------------------------------------------------------------
+# CORS : autoriser le frontend à appeler l'API depuis le navigateur
+# ------------------------------------------------------------
+# Sans cette configuration, un navigateur bloquerait les requêtes du frontend
+# React (qui tourne sur une autre origine que l'API).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ------------------------------------------------------------
+# Middleware de journalisation des requêtes
+# ------------------------------------------------------------
+# Enregistre chaque requête, son temps de réponse et son code de statut.
+# Ces logs alimentent la supervision (latence, taux d'erreurs).
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start_time) * 1000, 2)
+
+    logger.info(
+        "%s %s -> %s (%s ms)",
+        request.method,
+        request.url.path,
+        response.status_code,
+        duration_ms,
+    )
+    return response
+
+
+# ------------------------------------------------------------
+# Gestion centralisée des erreurs non prévues
+# ------------------------------------------------------------
+# Si une exception inattendue survient, on renvoie une réponse JSON propre
+# (statut 500) au lieu d'une page d'erreur brute. Le détail technique est
+# journalisé côté serveur mais n'est pas exposé au client (bonne pratique
+# de sécurité).
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.error("Erreur non geree sur %s : %s", request.url.path, exc)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Une erreur interne est survenue. Veuillez reessayer plus tard."},
+    )
 
 
 # Routes IA : /predict et /model-info
@@ -36,17 +114,28 @@ def root():
 @app.get("/health")
 def health_check():
     """
-    Vérifie l'état de l'API et de la connexion PostgreSQL.
+    Vérifie l'état de santé de l'API et de la connexion PostgreSQL.
 
-    Cet endpoint est utile pour les tests Postman ou pour vérifier rapidement que
-    le backend communique correctement avec la base de données.
+    - Si la base répond : renvoie un statut 200 avec api_status et database_status à "ok".
+    - Si la base ne répond pas : renvoie un statut HTTP 503 (Service Unavailable).
+
+    Ce comportement est essentiel pour la supervision : le healthcheck Docker et
+    l'outil de monitoring (Prometheus) peuvent ainsi détecter automatiquement
+    qu'un service est dégradé.
     """
-    result = execute_query("SELECT 1 AS database_status;", fetch_one=True)
+    database_ok = check_database()
 
-    return {
+    payload = {
         "api_status": "ok",
-        "database_status": "ok" if result else "error"
+        "database_status": "ok" if database_ok else "error",
     }
+
+    if not database_ok:
+        # 503 = le service ne peut pas répondre correctement car une dépendance
+        # (la base de données) est indisponible.
+        return JSONResponse(status_code=503, content=payload)
+
+    return payload
 
 
 @app.get("/tables/counts")
@@ -557,3 +646,99 @@ def get_stations_by_country():
     """
 
     return execute_query(query)
+
+
+# ============================================================
+# Alias francophones explicitement demandés par le cahier des charges
+# ============================================================
+# Le sujet TPRE532 (page 6) demande nommément les endpoints suivants :
+#   /trajets, /trajets/{id}, /stats/volumes, /health
+# L'API historique expose ces données sous des noms anglais (/trips, ...).
+# Pour respecter le cahier des charges sans dupliquer la logique métier,
+# on ajoute des routes alias qui réutilisent les fonctions déjà testées.
+
+
+@app.get("/trajets", tags=["Trajets (alias FR)"])
+def get_trajets(
+    train_type: str | None = Query(default=None, description="day ou night"),
+    departure_city: str | None = Query(default=None, description="Ville de départ"),
+    arrival_city: str | None = Query(default=None, description="Ville d'arrivée"),
+    source_id: int | None = Query(default=None, description="Identifiant de la source"),
+    limit: int = Query(default=100, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+):
+    """
+    Alias francophone de /trips, demandé par le cahier des charges.
+
+    Retourne la liste des trajets ferroviaires avec les mêmes filtres que /trips.
+    """
+    return get_trips(
+        train_type=train_type,
+        departure_city=departure_city,
+        arrival_city=arrival_city,
+        source_id=source_id,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/trajets/{trip_id}", tags=["Trajets (alias FR)"])
+def get_trajet_by_id(trip_id: int):
+    """
+    Alias francophone de /trips/{trip_id}, demandé par le cahier des charges.
+
+    Retourne le détail complet d'un trajet à partir de son identifiant.
+    """
+    return get_trip_by_id(trip_id)
+
+
+@app.get("/stats/volumes", tags=["Statistiques"])
+def get_stats_volumes():
+    """
+    Indicateurs de volumes agrégés, demandés par le cahier des charges.
+
+    Cet endpoint synthétise les principaux volumes de l'entrepôt :
+    - le nombre total de trajets,
+    - la répartition jour / nuit,
+    - le volume de trajets par opérateur.
+
+    Il alimente notamment les indicateurs clés affichés sur le frontend.
+    """
+    total = execute_query(
+        "SELECT COUNT(*) AS total_trips FROM trip;",
+        fetch_one=True,
+    )
+
+    by_train_type = execute_query(
+        """
+        SELECT
+            tt.type_name,
+            COUNT(*) AS total_trips
+        FROM trip t
+        JOIN train_type tt
+            ON t.train_type_id = tt.train_type_id
+        GROUP BY tt.type_name
+        ORDER BY total_trips DESC;
+        """
+    )
+
+    by_operator = execute_query(
+        """
+        SELECT
+            o.operator_name,
+            COUNT(*) AS total_trips
+        FROM trip t
+        JOIN route r
+            ON t.route_id = r.route_id
+        JOIN "operator" o
+            ON r.operator_id = o.operator_id
+        GROUP BY o.operator_name
+        ORDER BY total_trips DESC;
+        """
+    )
+
+    return {
+        "total_trips": total["total_trips"] if total else 0,
+        "by_train_type": by_train_type,
+        "by_operator": by_operator,
+    }
