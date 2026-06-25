@@ -1,0 +1,22 @@
+# ============================================================
+# Source de données Grafana - Prometheus
+# ============================================================
+# Ce fichier configure automatiquement Prometheus comme source de
+# données dans Grafana au démarrage. L'évaluateur n'a donc aucune
+# configuration manuelle à faire.
+# ============================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    # Identifiant fixe : il doit correspondre à celui référencé dans les
+    # tableaux de bord (uid "prometheus"), sinon Grafana ne trouve pas la
+    # source de données.
+    uid: prometheus
+    # "prometheus" est le nom du service dans docker-compose.
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true

@@ -4,6 +4,7 @@ import time
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from api.config import (
     API_TITLE,
@@ -92,6 +93,17 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 # Routes IA : /predict et /model-info
 app.include_router(prediction_router)
+
+
+# ------------------------------------------------------------
+# Supervision : exposition des métriques pour Prometheus
+# ------------------------------------------------------------
+# L'instrumentateur ajoute automatiquement un endpoint /metrics qui expose,
+# au format Prometheus, des métriques sur chaque requête : nombre total,
+# latence (temps de réponse), répartition par code de statut HTTP. Prometheus
+# vient lire cet endpoint régulièrement pour alimenter les tableaux de bord
+# Grafana (latence, taux d'erreurs, disponibilité).
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", tags=["Supervision"])
 
 
 @app.get("/")

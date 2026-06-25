@@ -1,0 +1,28 @@
+# ============================================================
+# Configuration Prometheus - ObRail Europe
+# ============================================================
+# Prometheus collecte (scrape) régulièrement les métriques exposées
+# par l'API sur son endpoint /metrics, afin de les historiser et de
+# permettre leur visualisation dans Grafana.
+# ============================================================
+
+global:
+  # Fréquence de collecte des métriques.
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Collecte des métriques de l'API ObRail.
+  - job_name: "obrail-api"
+    metrics_path: /metrics
+    static_configs:
+      # "api" est le nom du service dans docker-compose : Prometheus le
+      # joint via le réseau interne Docker.
+      - targets: ["api:8000"]
+        labels:
+          service: "obrail-api"
+
+  # Prometheus surveille aussi sa propre santé.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

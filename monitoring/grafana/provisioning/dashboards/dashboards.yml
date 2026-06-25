@@ -1,0 +1,18 @@
+# ============================================================
+# Provisionnement des tableaux de bord Grafana
+# ============================================================
+# Indique à Grafana de charger automatiquement, au démarrage, les
+# tableaux de bord présents dans le dossier monté /var/lib/grafana/dashboards.
+# ============================================================
+
+apiVersion: 1
+
+providers:
+  - name: "ObRail"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
